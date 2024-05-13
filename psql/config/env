@@ -1,0 +1,4 @@
+PSQL_BIN=/usr/lib/postgresql/15/bin
+PVE_CLUSTER_CONFIG=/etc/pve
+PSQL_DATA=/data/psql
+PSQL_USER='postgres'

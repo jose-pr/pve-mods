@@ -1,0 +1,26 @@
+[Unit]
+Description=A replication manager, and failover management tool for PostgreSQL
+After=network.target
+Requires=postgresql.service
+PartOf=postgresql.service
+RequiresMountsFor=/etc/pve/psql /data/psql
+
+[Service]
+Type=simple
+
+EnvironmentFile=/etc/pve/psql/env
+PIDFile=/run/repmgrd/pid
+
+User=postgres
+Group=postgres
+
+ExecStartPre=/bin/sleep 5
+ExecStartPre=+/bin/mkdir -p /run/repmgrd
+ExecStartPre=+/bin/chown postgres:postgres /run/repmgrd
+ExecStart=/bin/bash -c 'source /etc/pve/psql/profile;"$PSQL_BIN/repmgrd" -f "$REPMGR_CONF" -p /run/repmgrd/pid -d false'
+ExecStop=/bin/kill -TERM ${MAINPID}
+ExecReload=/bin/kill -HUP ${MAINPID}
+TimeoutSec=60
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,28 @@
+# systemd service template for PostgreSQL clusters. The actual instances will
+# be called "postgresql@version-cluster", e.g. "postgresql@9.3-main". The
+# variable %i expands to "version-cluster", %I expands to "version/cluster".
+# (%I breaks for cluster names containing dashes.)
+
+[Unit]
+Description=PostgreSQL database server
+Documentation=man:postgres(1)
+RequiresMountsFor=/etc/pve/psql /data/psql
+After=network.target
+Wants=network.target
+
+[Service]
+Type=notify
+User=postgres
+EnvironmentFile=/etc/pve/psql/env
+
+ExecStart=/bin/bash -c 'source /etc/pve/psql/profile;"$PSQL_BIN/postgres" -D "$PSQL_DATA" -c "config_file=$PSQL_CONF"'
+ExecReload=/bin/kill -HUP $MAINPID
+KillMode=mixed
+KillSignal=SIGINT
+TimeoutSec=infinity
+
+
+[Install]
+WantedBy=multi-user.target
+
+
