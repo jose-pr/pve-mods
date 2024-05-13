@@ -1,0 +1,5 @@
+function mkmount(){
+    echo "Mounting $1 at $2"
+    mkdir -p "$2"
+    mount --bind "$1" "$2"
+}

@@ -1,0 +1,24 @@
+vrrp_script master_node {
+  script       "/etc/keepalived/ha_master.sh"
+  interval 1
+  fall 1  
+  rise 1
+}
+
+vrrp_instance pve {
+        state MASTER
+        interface eth0
+        virtual_router_id 1
+        priority 200
+        advert_int 1
+        authentication {
+              auth_type PASS
+              auth_pass 01234
+        }
+        virtual_ipaddress {
+              10.0.0.1/32
+        }
+        track_script {
+         master_node
+      }
+}
