@@ -57,7 +57,11 @@ EOF
 sudo /usr/bin/bash "$PSQL_SCRIPTS/update_cluster_config"
 
 psql -U postgres repmgr -tAc "SELECT conninfo FROM repmgr.nodes WHERE active = TRUE" | while read conninfo; do
-  host=`psql -U postgres -tAc "select inet_server_addr();" "$conninfo"`
+  echo "Reloading pgbounder for: $conninfo"
+  if ! host=`psql -U postgres -tAc "select inet_server_addr();" "$conninfo"`; then
+      echo "Error getting host from $conninfo"
+      continue
+  fi
   if ! psql -U pgbouncer -tc "reload" -h $host pgbouncer > /dev/null; then
     echo "Error reloading pgbouncer at $host"
   fi
