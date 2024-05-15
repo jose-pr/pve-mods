@@ -50,11 +50,11 @@ fi
 
 # 2. Reconfigure pgbouncer instances
 PSQL_PRIMARY_HOST=`psql -U postgres -tAc "select inet_server_addr();" "$REPMGR_CONNINFO"`
-cat << EOF > "$PSQL_DATA/pgbouncer.database.ini"
+cat << EOF > /run/postgresql/pgbouncer.database.ini
 [databases]
 * = host=$PSQL_PRIMARY_HOST port=6432
 EOF
-sudo /usr/bin/bash "$PSQL_SCRIPTS/update_cluster_config"
+sudo mv -f /run/postgresql/pgbouncer.database.ini "$PGBOUNCER_DATABASE_INI" 2> /dev/null
 
 psql -U postgres repmgr -tAc "SELECT conninfo FROM repmgr.nodes WHERE active = TRUE" | while read conninfo; do
   if ! host=`psql -U postgres -tAc "select inet_server_addr();" "$conninfo"`; then

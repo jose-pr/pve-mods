@@ -1,6 +1,0 @@
-#!/bin/bash
-
-source /etc/pve/psql/profile
-
-
-cp -f "$PSQL_DATA/pgbouncer.database.ini" "$PGBOUNCER_DATABASE_INI"

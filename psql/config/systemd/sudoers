@@ -3,4 +3,5 @@ postgres ALL = NOPASSWD: \
     /usr/bin/systemctl ^(start|restart|stop|status|reload)( +(repmgrd|postgresql|pgbouncer))+$, \
     /usr/bin/bash /etc/pve/psql/scripts/*, \
     /usr/bin/cat /etc/pve/priv/psql/*, \
-    /usr/bin/cat /etc/pve/local/priv/psql/*
+    /usr/bin/cat /etc/pve/local/priv/psql/*, \
+    ^/usr/bin/(cp|mv)$ -f /run/postgresql/* /etc/pve/psql/*
