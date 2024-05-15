@@ -2,9 +2,13 @@ set -o allexport && source "/etc/pve/psql/env" && set +o allexport
 export PSQL_CLUSTER_CONFIG="$PVE_CLUSTER_CONFIG/psql"
 export PSQL_LOCAL_CONFIG="$PVE_CLUSTER_CONFIG/local/psql"
 export PSQL_CONF="$PSQL_CLUSTER_CONFIG/postgresql.conf"
-export PSQL_CLUSTER_PASSFILE="/etc/pve/priv/pgpass"
+export PSQL_CLUSTER_PRIV="/etc/pve/priv"
+export PSQL_CLUSTER_PASSFILE="$PSQL_CLUSTER_PRIV/pgpass"
 export PSQL_SCRIPTS="$PSQL_CLUSTER_CONFIG/scripts"
 export REPMGR_CONF="$PSQL_CLUSTER_CONFIG/repmgr.conf"
+export PGBOUNCER_USERLIST="$PSQL_CLUSTER_PRIV/pgbouncer.userlist.txt"
+export PGBOUNCER_INI="$PSQL_CLUSTER_CONFIG/pgbouncer.ini"
+export PGBOUNCER_DATABASE_INI="$PSQL_CLUSTER_CONFIG/pgbouncer.database.ini"
 
 pathprepend() {
   for ((i=$#; i>0; i--)); 

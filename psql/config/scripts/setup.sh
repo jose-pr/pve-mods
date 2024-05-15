@@ -79,4 +79,11 @@ ln -fs "$PSQL_CLUSTER_CONFIG/systemd/sudoers" /etc/sudoers.d/postgresql
 #
 ln -fs "$REPMGR_CONF" "/etc/repmgr.conf"
 
+#PGBOUNCER
+ln -sf "$PGBOUNCER_INI"  "/etc/pgbouncer/pgbouncer.ini"
+cp -f "$PGBOUNCER_USERLIST" "/etc/pgbouncer/userlist.txt"
+chmod 600 "/etc/pgbouncer/userlist.txt"
+chown "$PSQL_USER":"$PSQL_GID" "/etc/pgbouncer/userlist.txt"
+
+
 

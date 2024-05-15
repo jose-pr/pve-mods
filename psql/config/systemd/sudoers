@@ -13,4 +13,5 @@ postgres ALL = NOPASSWD: \
     /usr/bin/systemctl stop postgresql repmgrd, \
     /usr/bin/systemctl start postgresql repmgrd, \
     /usr/bin/systemctl restart postgresql repmgrd, \
-    /usr/bin/systemctl reload postgresql repmgrd
+    /usr/bin/systemctl reload postgresql repmgrd, \
+    /usr/bin/bash /etc/pve/psql/scripts/update_cluster_config
