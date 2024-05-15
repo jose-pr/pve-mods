@@ -2,7 +2,7 @@ set -o allexport && source "/etc/pve/psql/env" && set +o allexport
 export PSQL_CLUSTER_CONFIG="$PVE_CLUSTER_CONFIG/psql"
 export PSQL_LOCAL_CONFIG="$PVE_CLUSTER_CONFIG/local/psql"
 export PSQL_CONF="$PSQL_CLUSTER_CONFIG/postgresql.conf"
-export PSQL_CLUSTER_PRIV="/etc/pve/priv"
+export PSQL_CLUSTER_PRIV="/etc/pve/priv/psql"
 export PSQL_CLUSTER_PASSFILE="$PSQL_CLUSTER_PRIV/pgpass"
 export PSQL_SCRIPTS="$PSQL_CLUSTER_CONFIG/scripts"
 export REPMGR_CONF="$PSQL_CLUSTER_CONFIG/repmgr.conf"
@@ -30,4 +30,11 @@ if [ -e "$PSQL_CLUSTER_PASSFILE" ]; then
   chmod 600 "$_pgpass" 2> /dev/null || true
 fi
 
+if [ "`whoami`" = 'root' ]; then
+repmgr_() {
+    su postgres -c '"$0" "$@"' -- "$PSQL_BIN/repmgr" -f "$REPMGR_CONF" "$@"
+}
+alias repmgr=repmgr_
+else
 alias repmgr="'$PSQL_BIN/repmgr' -f '$REPMGR_CONF'"
+fi

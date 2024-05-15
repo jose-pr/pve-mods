@@ -1,17 +1,6 @@
 Defaults:postgres !requiretty
 postgres ALL = NOPASSWD: \
-    /usr/bin/systemctl stop postgresql, \
-    /usr/bin/systemctl start postgresql, \
-    /usr/bin/systemctl restart postgresql, \
-    /usr/bin/systemctl reload postgresql, \
-    /usr/bin/systemctl status postgresql, \
-    /usr/bin/systemctl stop repmgrd, \
-    /usr/bin/systemctl start repmgrd, \
-    /usr/bin/systemctl restart repmgrd, \
-    /usr/bin/systemctl reload repmgrd, \
-    /usr/bin/systemctl status repmgrd, \
-    /usr/bin/systemctl stop postgresql repmgrd, \
-    /usr/bin/systemctl start postgresql repmgrd, \
-    /usr/bin/systemctl restart postgresql repmgrd, \
-    /usr/bin/systemctl reload postgresql repmgrd, \
-    /usr/bin/bash /etc/pve/psql/scripts/update_cluster_config
+    /usr/bin/systemctl ^(start|restart|stop|status|reload)( +(repmgrd|postgresql|pgbouncer))+$, \
+    /usr/bin/bash /etc/pve/psql/scripts/*, \
+    /usr/bin/cat /etc/pve/priv/psql/*, \
+    /usr/bin/cat /etc/pve/local/priv/psql/*
