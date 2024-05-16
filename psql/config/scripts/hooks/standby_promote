@@ -11,9 +11,7 @@ if [ "$REPMGR_NODE_ID" != "$EVENT_NODE_ID" ];then
   echo "ID: $REPMGR_NODE_ID is done processing $EVENT_TYPE for ID: $EVENT_NODE_ID"
   exit 0
 fi
-conninfo_host(){
-  python3 -c "import psycopg;print(psycopg.conninfo.conninfo_to_dict('${1:?}')['host'])"
-}
+
 PSQL_PRIMARY_HOST=`conninfo_host "$REPMGR_CONNINFO"`
 
 cat << EOF > /run/postgresql/pgbouncer.database.ini

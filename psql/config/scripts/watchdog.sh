@@ -31,9 +31,8 @@ if  [ "$REPMGR_ROLE" = 'primary' ] && [ "$IS_PSQL_PRIMARY" = "false" ]; then
 fi
 
 if  [ "$IS_PVE_PRIMARY" = 'true' ] && [ "$IS_PSQL_PRIMARY" = 'false' ]; then
-    echo "I am HA Priary but not primary for PSQL performing swithover"
+    echo "I am HA Primary but not primary for PSQL performing swithover"
     repmgr standby switchover
-#    bash "$PSQL_SCRIPTS/promote"
 fi
 
 if ! systemctl is-active repmgrd > /dev/null;then
