@@ -1,0 +1,35 @@
+#!/bin/bash
+source /etc/pve/psql/profile
+
+if ! systemctl is-active pgbouncer > /dev/null;then
+    echo "Starting pgbouncer"
+    sudo systemctl start pgbouncer
+fi
+parse_repmgr_csv 'REPMGR_' <<< "$(repmgr node status --csv 2> /dev/null)" || true  
+
+if [ "$REPMGR_NODE_ID" != "$EVENT_NODE_ID" ];then
+  echo "ID: $REPMGR_NODE_ID is done processing $EVENT_TYPE for ID: $EVENT_NODE_ID"
+  exit 0
+fi
+conninfo_host(){
+  python3 -c "import psycopg;print(psycopg.conninfo.conninfo_to_dict('${1:?}')['host'])"
+}
+PSQL_PRIMARY_HOST=`conninfo_host "$REPMGR_CONNINFO"`
+
+cat << EOF > /run/postgresql/pgbouncer.database.ini
+[databases]
+* = host=$PSQL_PRIMARY_HOST port=6432
+EOF
+sudo mv -f /run/postgresql/pgbouncer.database.ini "$PGBOUNCER_DATABASE_INI" 2> /dev/null
+
+psql -tAc "SELECT conninfo FROM repmgr.nodes" "$REPMGR_CONNINFO" | while read conninfo; do
+  if ! host=`conninfo_host "$conninfo"`; then
+      echo "Error parsing conninfo: $conninfo"
+  fi
+  if ! psql -U pgbouncer -tc "reload" -h $host pgbouncer > /dev/null; then
+    echo "Error reloading pgbouncer at $host"
+  fi
+  echo "Reload complete for pgbouncer at: $host"
+done
+
+echo "Reconfiguration of pgbouncer complete"

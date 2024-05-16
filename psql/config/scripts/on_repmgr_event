@@ -1,0 +1,26 @@
+#!/bin/bash
+source /etc/pve/psql/profile
+
+set -u
+set -e
+
+set -o allexport
+
+EVENT_NODE_ID=${1:?'Missing Node ID'}
+EVENT_TYPE=${2:?'Missing Type'}
+EVENT_OK=${3:?'Missing Status'}
+EVENT_TIMESTAMP=${4:?'Missing Timestamp'}
+EVENT_DETAILS=${5:?'Missing Details'}
+EVENT_PRIMARY_ID=${6:-''}
+EVENT_PRIMARY_CONNINFO=${7-''}
+EVENT_PRIMARY_NAME=${8-''}
+
+set +o allexport
+for hook in "$PSQL_SCRIPTS/hooks/$EVENT_TYPE" "$PSQL_SCRIPTS/hooks/"*"-$EVENT_TYPE";do
+    if [ -e "$hook" ];then
+        if ! /bin/bash "$hook" "$@";then
+            echo "[ERROR] Failed to execute $hook"
+        fi
+        echo "[OK] $hook"
+    fi
+done

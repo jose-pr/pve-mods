@@ -10,6 +10,33 @@ export PGBOUNCER_USERLIST="$PSQL_CLUSTER_PRIV/pgbouncer.userlist.txt"
 export PGBOUNCER_INI="$PSQL_CLUSTER_CONFIG/pgbouncer.ini"
 export PGBOUNCER_DATABASE_INI="$PSQL_CLUSTER_CONFIG/pgbouncer.database.ini"
 
+get_psql_primary(){
+  grep '\* *=' $PGBOUNCER_DATABASE_INI | sed 's/.*host *= *\([^ ]\+\) *.*/\1/'
+}
+
+
+unquote(){
+  quoted=$1
+  type=${2:-'"'}
+  unquoted=${quoted#*"$type"}
+  unquoted=${unquoted%"$type"*}
+  echo "$unquoted"
+}
+
+parse_repmgr_csv(){
+  prefix=${1:-''}
+  while IFS= read -r line; do
+    name=$(unquote "$(echo "$line"| cut -d, -f1)")
+    value=$(unquote "$(echo "$line"| cut -d, -f2-)")
+    if [ -n "$name" ]; then
+      name=$prefix$name
+      name=${name// /_}
+      name=${name^^}
+      read -d"\0" "$name" <<<"$value"
+    fi
+  done
+}
+
 pathprepend() {
   for ((i=$#; i>0; i--)); 
   do

@@ -9,6 +9,7 @@ Documentation=man:postgres(1)
 RequiresMountsFor=/etc/pve/psql /data/psql
 After=network.target
 Wants=network.target
+Before=repmgrd.service
 
 [Service]
 Type=notify

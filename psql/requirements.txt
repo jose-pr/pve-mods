@@ -2,3 +2,4 @@ postgresql
 repmgr
 sudo
 pgbouncer
+python3-psycopg
