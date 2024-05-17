@@ -1,0 +1,53 @@
+#!/bin/bash
+set -e
+
+PVE_CLUSTER_CONFIG='/etc/pve'
+PVE_NGINX_CONFIG=$PVE_CLUSTER_CONFIG/nginx
+PVE_NGINX_SITE=$PVE_NGINX_CONFIG/site.conf
+NGIX_ENABLED_SITES=/etc/nginx/sites-enabled
+PVE_ENABLED_SITE=$NGIX_ENABLED_SITES/proxmox.conf
+
+start(){
+    if [ -e "$PVE_NGINX_SITE" ]; then
+        ln -sf "$PVE_NGINX_SITE" "$PVE_ENABLED_SITE"
+        if ! nginx -t; then
+            nginx -s reload
+        fi
+    fi
+}
+stop(){
+    if [ -e "$PVE_ENABLED_SITE" ]; then
+        rm -f "$PVE_ENABLED_SITE"
+        nginx -s reload
+    fi
+}
+
+install(){
+    if ! which nginx > /dev/null; then
+        apt update
+        apt install -y nginx
+    fi
+    mkdir '/etc/systemd/system/pveproxy.service.d' -p
+    cp -f "$PVE_NGINX_CONFIG/pveproxy.service" '/etc/systemd/system/pveproxy.service.d/nginx.conf'
+    systemctl daemon-reload
+}
+
+case "$1" in
+    install)
+        install
+        ;;
+    start)
+        start
+        ;;
+    stop)
+        stop
+        ;;
+    restart|reload)
+        stop
+        start
+        ;;
+    *)
+        echo "Invalid Command"
+        exit 1
+        ;;
+esac
