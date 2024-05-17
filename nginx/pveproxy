@@ -10,7 +10,7 @@ PVE_ENABLED_SITE=$NGIX_ENABLED_SITES/proxmox.conf
 start(){
     if [ -e "$PVE_NGINX_SITE" ]; then
         ln -sf "$PVE_NGINX_SITE" "$PVE_ENABLED_SITE"
-        if ! nginx -t; then
+        if nginx -t; then
             nginx -s reload
         fi
     fi
