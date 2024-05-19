@@ -12,6 +12,8 @@ start(){
         ln -sf "$PVE_NGINX_SITE" "$PVE_ENABLED_SITE"
         if nginx -t; then
             nginx -s reload
+        else
+            rm -f "$PVE_ENABLED_SITE"
         fi
     fi
 }

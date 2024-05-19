@@ -10,12 +10,35 @@ export PGBOUNCER_USERLIST="$PSQL_CLUSTER_PRIV/pgbouncer.userlist.txt"
 export PGBOUNCER_INI="$PSQL_CLUSTER_CONFIG/pgbouncer.ini"
 export PGBOUNCER_DATABASE_INI="$PSQL_CLUSTER_CONFIG/pgbouncer.database.ini"
 
+is_quorate(){
+    jq -e '.cluster.quorate == 1' /etc/pve/.members > /dev/null
+}
+
+is_pve_primary(){
+  jq -e ".master_node == \"`hostname`\"" /etc/pve/ha/manager_status > /dev/null
+}
+
+current_pve_primary(){
+  jq -r ".master_node" /etc/pve/ha/manager_status
+}
+
+is_psql_primary(){
+local host
+local primary
+primary=`current_psql_primary`
+for host in `hostname -i` `hostname` `hostname -f`;do
+    if [ "$primary" = "$host" ]; then
+        return 0
+    fi
+done
+return 1
+}
 
 conninfo_host(){
   python3 -c "import psycopg;print(psycopg.conninfo.conninfo_to_dict('${1:?}')['host'])"
 }
 
-get_psql_primary(){
+current_psql_primary(){
   local conninfo
   conninfo=`grep '\* *=' $PGBOUNCER_DATABASE_INI | sed 's/[^=]*= *\(.*\)/\1/'`
   conninfo_host "$conninfo"
