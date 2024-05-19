@@ -64,11 +64,12 @@ fi
 #
 # Systemd
 #
-ln -fs "$PSQL_CLUSTER_CONFIG/systemd/repmgrd.service" /etc/systemd/system/
-ln -fs "$PSQL_CLUSTER_CONFIG/systemd/postgresql.service" /etc/systemd/system/
+for unit in "$PSQL_CLUSTER_CONFIG/systemd/"*.{service,timer};do
+    ln -fs "$unit" /etc/systemd/system/
+done
 ln -fs "$PSQL_CLUSTER_CONFIG/systemd/sudoers" /etc/sudoers.d/postgresql
 
-# systemctl daemon-reload
+systemctl daemon-reload
 
 #
 # PSQL

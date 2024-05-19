@@ -7,7 +7,6 @@ RequiresMountsFor=/etc/pve/psql /data/psql
 [Service]
 Type=forking
 
-EnvironmentFile=/etc/pve/psql/env
 PIDFile=/run/repmgrd/pid
 
 User=postgres

@@ -1,0 +1,10 @@
+[Unit]
+Description=PSQL Watchdog
+Requires=psql-watchdog.service
+
+[Timer]
+Unit=psql-watchdog.service
+OnCalendar=*-*-* *:*:00
+
+[Install]
+WantedBy=timers.target

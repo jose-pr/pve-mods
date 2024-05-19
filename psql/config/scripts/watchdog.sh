@@ -14,16 +14,13 @@ for service in postgresql pgbouncer;do
     fi
 done
 
-IS_PVE_PRIMARY=`is_pve_primary && echo 'true' || echo 'false'`
-PVE_PRIMARY=`current_pve_primary`
 PSQL_PRIMARY_HOST=`current_psql_primary`
 IS_PSQL_PRIMARY=`is_psql_primary && echo 'true' || echo 'false'`
 
 parse_repmgr_csv 'REPMGR_' <<< "$(repmgr node status --csv 2> /dev/null)" || true  
 
-echo "Current PVE Primary is: $PVE_PRIMARY"
-echo "Current PDQL Primary is: $PSQL_PRIMARY_HOST"
-echo "This node is primary for pve: $IS_PVE_PRIMARY psql: $IS_PSQL_PRIMARY"
+echo "Current PSQL Primary is: $PSQL_PRIMARY_HOST"
+echo "This node is primary: $IS_PSQL_PRIMARY"
 echo "Assigned PSQL Role: $REPMGR_ROLE"
 
 if  [ "$REPMGR_ROLE" = 'primary' ] && [ "$IS_PSQL_PRIMARY" = "false" ]; then
@@ -32,10 +29,15 @@ if  [ "$REPMGR_ROLE" = 'primary' ] && [ "$IS_PSQL_PRIMARY" = "false" ]; then
     rm -f "$PSQL_DATA/recovery.conf"
     repmgr node rejoin -d "host=$PSQL_PRIMARY_HOST dbname=repmgr user=repmgr" --force-rewind
     sudo systemctl start postgresql repmgrd
+    parse_repmgr_csv 'REPMGR_' <<< "$(repmgr node status --csv 2> /dev/null)" || true  
+    IS_PSQL_PRIMARY=false
 fi
 
-if  [ "$IS_PVE_PRIMARY" = 'true' ] && [ "$IS_PSQL_PRIMARY" = 'false' ]; then
-    echo "I am HA Primary but not primary for PSQL performing swithover"
+DESIRED_MASTER=`psql -tAc "SELECT node_name FROM repmgr.nodes WHERE active=true ORDER BY priority DESC LIMIT 1" "$REPMGR_CONNINFO"`
+echo "Desired PSQL Primary: $DESIRED_MASTER"
+
+if  [ "$DESIRED_MASTER" = "$REPMGR_NODE_NAME" ] && [ "$IS_PSQL_PRIMARY" = 'false' ]; then
+    echo "I am the desired Primary but not primary for PSQL performing swithover"
     repmgr standby switchover
 fi
 
