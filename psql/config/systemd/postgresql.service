@@ -14,8 +14,6 @@ Before=repmgrd.service
 [Service]
 Type=notify
 User=postgres
-EnvironmentFile=/etc/pve/psql/env
-
 ExecStart=/bin/bash -c 'source /etc/pve/psql/profile;"$PSQL_BIN/postgres" -D "$PSQL_DATA" -c "config_file=$PSQL_CONF"'
 ExecReload=/bin/kill -HUP $MAINPID
 KillMode=mixed

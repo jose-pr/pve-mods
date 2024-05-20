@@ -1,14 +1,6 @@
 set -o allexport && source "/etc/pve/psql/env" && set +o allexport
-export PSQL_CLUSTER_CONFIG="$PVE_CLUSTER_CONFIG/psql"
-export PSQL_LOCAL_CONFIG="$PVE_CLUSTER_CONFIG/local/psql"
-export PSQL_CONF="$PSQL_CLUSTER_CONFIG/postgresql.conf"
-export PSQL_CLUSTER_PRIV="/etc/pve/priv/psql"
-export PSQL_CLUSTER_PASSFILE="$PSQL_CLUSTER_PRIV/pgpass"
-export PSQL_SCRIPTS="$PSQL_CLUSTER_CONFIG/scripts"
-export REPMGR_CONF="$PSQL_CLUSTER_CONFIG/repmgr.conf"
-export PGBOUNCER_USERLIST="$PSQL_CLUSTER_PRIV/pgbouncer.userlist.txt"
-export PGBOUNCER_INI="$PSQL_CLUSTER_CONFIG/pgbouncer.ini"
-export PGBOUNCER_DATABASE_INI="$PSQL_CLUSTER_CONFIG/pgbouncer.database.ini"
+export PSQL_HOME=`getent passwd postgres | cut -d: -f6`
+export PSQL_GID=`getent passwd postgres | cut -d: -f4`
 
 is_quorate(){
     jq -e '.cluster.quorate == 1' /etc/pve/.members > /dev/null
@@ -52,6 +44,23 @@ unquote(){
   echo "$unquoted"
 }
 
+load_psql_conf(){
+  local path
+  local prefix
+  path=${1:?}
+  prefix=${2:?}
+  while IFS= read -r line; do
+    name=$(echo "$line"| cut -d= -f1)
+    value=$(unquote "$(echo "$line"| cut -d= -f2-)" "'")
+    if [ -n "$name" ]; then
+      name=$prefix$name
+      name=${name// /_}
+      name=${name^^}
+      read -d"\0" "$name" <<<"$value"
+    fi
+  done <<< "$(sed 's/^\s*\([^= ]*\)*\s*=\s*\(.*\)/\1=\2/' "$path" | grep "=" | grep -v "^\s*#" )" || true  
+}
+
 parse_repmgr_csv(){
   prefix=${1:-''}
   while IFS= read -r line; do
@@ -77,20 +86,37 @@ pathprepend() {
 }
 pathprepend "$PSQL_BIN"
 
+filesync(){
+    local src
+    local dst
+    src=${1:?}
+    dst=${2:?}
+
+    if [ -L "$dst" ] || ! [ -e "$src"  ] || ! [ -e "$dst"  ] || ! cmp --silent  "$src" "$dst";then
+      if [ -e "$dst"  ]; then
+        rm -f "$dst"
+      fi
+      cat "$src" > "$dst"
+    else
+      return 1
+    fi
+}
+
+
 _pgpass="$HOME/.pgpass"
 
 if [ -e "$PSQL_CLUSTER_PASSFILE" ]; then
-  if ! [ -e "$_pgpass"  ] || [ -n "`diff  "$_pgpass" "$PSQL_CLUSTER_PASSFILE"`" ];then
-    cat "$PSQL_CLUSTER_PASSFILE" > "$_pgpass" 2> /dev/null || true
+  if filesync "$PSQL_CLUSTER_PASSFILE" "$_pgpass"; then
+    chmod 600 "$_pgpass" 2> /dev/null || true
   fi
-  chmod 600 "$_pgpass" 2> /dev/null || true
 fi
 
-if [ "`whoami`" = 'root' ]; then
-repmgr_() {
+pve_repmgr() {
     su postgres -c '"$0" "$@"' -- "$PSQL_BIN/repmgr" -f "$REPMGR_CONF" "$@"
 }
-alias repmgr=repmgr_
+
+if [ "`whoami`" = 'root' ]; then
+alias repmgr=pve_repmgr
 else
 alias repmgr="'$PSQL_BIN/repmgr' -f '$REPMGR_CONF'"
 fi

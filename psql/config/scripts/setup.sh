@@ -3,15 +3,6 @@ set -e
 
 source /etc/pve/psql/profile
 
-PSQL_HOME=`getent passwd postgres | cut -d: -f6`
-PSQL_GID=`getent passwd postgres | cut -d: -f4`
-
-echo "Cluster Config: $PSQL_CLUSTER_CONFIG"
-echo "Local   Config: $PSQL_LOCAL_CONFIG"
-echo "PSQL  Username:" $PSQL_USER
-echo "$PSQL_USER HOME:" $PSQL_HOME
-echo "$PSQL_USER GID:" $PSQL_GID
-
 #
 # Verify CONFIG
 #
@@ -20,24 +11,32 @@ if ! [ -e "$PSQL_LOCAL_CONFIG/repmgr.conf" ] || ! [ -e "$PSQL_CLUSTER_CONFIG/rep
     exit 1
 fi
 
-source "$PSQL_LOCAL_CONFIG/repmgr.conf"
-REPMGR_ID=$node_id
-REPMGR_NAME=$node_name
+load_psql_conf "$PSQL_LOCAL_CONFIG/repmgr.conf" "REPMGR_"
 
-if [ -z "$REPMGR_ID" ] || [ -z "$REPMGR_NAME" ]; then
+if [ -z "$REPMGR_NODE_ID" ] || [ -z "$REPMGR_NODE_NAME" ]; then
     echo "Bad REPMGR Config"
     exit 1
 fi
 
+RELOAD=0
 #
 # PROFILE
 #
-cp -f "$PSQL_CLUSTER_PASSFILE" "$PSQL_HOME/.pgpass"
-chown "$PSQL_USER":"$PSQL_GID" "$PSQL_HOME/.pgpass"
-chmod 600 "$PSQL_HOME/.pgpass"
+if filesync "$PSQL_CLUSTER_PASSFILE" "$PSQL_HOME/.pgpass";then
+    echo "Update pgpass"
+    chown "$PSQL_USER":"$PSQL_GID" "$PSQL_HOME/.pgpass"
+    chmod 600 "$PSQL_HOME/.pgpass"
+fi
+if filesync "$PSQL_CLUSTER_CONFIG/profile"  "$PSQL_HOME/.profile";then
+    echo "Updated profile"
+    ln -sf "$PSQL_CLUSTER_CONFIG/profile" "$PSQL_HOME/.bashrc"
+fi
+if filesync "$PSQL_SCRIPTS/watchdog.sh"  "$PSQL_HOME/watchdog.sh";then
+    echo "Updated watchdog"
+    chmod 755 "$PSQL_HOME/watchdog.sh"
+fi
 
-ln -sf "$PSQL_CLUSTER_CONFIG/profile" "$PSQL_HOME/.profile"
-ln -sf "$PSQL_CLUSTER_CONFIG/profile" "$PSQL_HOME/.bashrc"
+
 
 #
 # CONFIGURE SSH
@@ -50,7 +49,11 @@ SSH_ID="$SSH_HOME/id_rsa"
 mkdir -p "$SSH_HOME"
 chown -R "$PSQL_USER":"$PSQL_GID" "$SSH_HOME"
 chmod 700 "$SSH_HOME"
-ln -sf "$PSQL_CLUSTER_CONFIG/authorized_keys" "$SSH_HOME/authorized_keys"
+
+if filesync "$PSQL_CLUSTER_CONFIG/authorized_keys"  "$SSH_HOME/authorized_keys";then
+    echo "Updated authorized_keys"
+fi
+
 if ! [ -e "$SSH_ID" ]; then
     ssh-keygen -t rsa -N "" -f "$SSH_ID"
     chmod 600 "$SSH_ID"
@@ -65,15 +68,19 @@ fi
 # Systemd
 #
 for unit in "$PSQL_CLUSTER_CONFIG/systemd/"*.{service,timer};do
-    ln -fs "$unit" /etc/systemd/system/
+    if filesync "$unit" "/etc/systemd/system/$(basename "$unit")"; then
+        RELOAD=1
+    fi
 done
-ln -fs "$PSQL_CLUSTER_CONFIG/systemd/sudoers" /etc/sudoers.d/postgresql
+if filesync "$PSQL_CLUSTER_CONFIG/systemd/sudoers" /etc/sudoers.d/postgresql; then
+    echo "Updating sudoers"
+fi
 
-systemctl daemon-reload
+if [ "$RELOAD" = "1" ]; then
+    echo "Reloading systemd units"
+    systemctl daemon-reload
+fi
 
-#
-# PSQL
-#
 
 #
 # REPMGR
@@ -82,9 +89,10 @@ ln -fs "$REPMGR_CONF" "/etc/repmgr.conf"
 
 #PGBOUNCER
 ln -sf "$PGBOUNCER_INI"  "/etc/pgbouncer/pgbouncer.ini"
-cp -f "$PGBOUNCER_USERLIST" "/etc/pgbouncer/userlist.txt"
-chmod 600 "/etc/pgbouncer/userlist.txt"
-chown "$PSQL_USER":"$PSQL_GID" "/etc/pgbouncer/userlist.txt"
+if filesync "$PGBOUNCER_USERLIST" "/etc/pgbouncer/userlist.txt"; then
+    chmod 600 "/etc/pgbouncer/userlist.txt"
+    chown "$PSQL_USER":"$PSQL_GID" "/etc/pgbouncer/userlist.txt"
+fi
 
 
 
