@@ -1,6 +1,0 @@
-[Unit]
-Requires=nginx.service
-[Service]
-ExecStartPost=/usr/bin/bash /etc/pve/nginx/pveproxy start
-ExecStopPost=/usr/bin/bash /etc/pve/nginx/pveproxy stop
-

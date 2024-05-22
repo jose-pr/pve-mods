@@ -2,7 +2,7 @@
 K3S_DATASTORE_ENDPOINT='postgres://user:pass@vip:5432/k3sdb' 
 source .privenv
 mkdir -p /etc/pve/k3s
-INSTALL_K3S_EXEC="--tls-san $CLUSTER_IP"  INSTALL_K3S_VERSION=v1.28.9+k3s1 K3S_DATASTORE_ENDPOINT="$K3S_DATASTORE_ENDPOINT" K3S_TOKEN_FILE='/etc/pve/priv/k3s-token' INSTALL_K3S_SYSTEMD_DIR=/etc/pve/k3s bash /etc/pve/k3s/install.sh
+INSTALL_K3S_EXEC="--tls-san $CLUSTER_IP --disable=traefik --disable=servicelb"  INSTALL_K3S_VERSION=v1.28.9+k3s1 K3S_DATASTORE_ENDPOINT="$K3S_DATASTORE_ENDPOINT" K3S_TOKEN_FILE='/etc/pve/priv/k3s-token' INSTALL_K3S_SYSTEMD_DIR=/etc/pve/k3s bash /etc/pve/k3s/install.sh
 
 mv  /var/lib/rancher/k3s/server/token /etc/pve/priv/k3s-token
 ln -fs /etc/pve/priv/k3s-token /var/lib/rancher/k3s/server/token
@@ -17,7 +17,7 @@ kubectl create namespace cattle-system
 
 helm repo add rancher-latest https://releases.rancher.com/server-charts/latest
 
-helm install rancher rancher-latest/rancher --namespace cattle-system --set hostname="$RANCHER_FQDN" --set tls=external   --set bootstrapPassword=admin
+helm install rancher rancher-latest/rancher --namespace cattle-system --set hostname="$RANCHER_FQDN" --set tls=external   --set bootstrapPassword=admin --create-namespace
 
 curl https://baltocdn.com/helm/signing.asc | gpg --dearmor | sudo tee /usr/share/keyrings/helm.gpg > /dev/null
 sudo apt-get install apt-transport-https --yes
